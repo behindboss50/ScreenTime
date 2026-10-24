@@ -1,0 +1,6 @@
+{
+  "name": "True Screen Time",
+  "description": "Chronological app session timeline from morning with clear start and end times, unlock stats, and session breakdown.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
