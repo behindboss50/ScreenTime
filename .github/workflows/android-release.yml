@@ -34,18 +34,42 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK Licenses & Install API 36.1
+      - name: Set up Android SDK & Accept Licenses (API 36.1)
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0" || true
+          set -e
+          SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
+          sudo mkdir -p "$SDK_DIR/licenses"
+          sudo chown -R "$(whoami)" "$SDK_DIR" || true
 
-      - name: Setup Gradle 9.3.1
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.3.1"
+          # Write official Google Android SDK license hashes directly
+          printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n" > "$SDK_DIR/licenses/android-sdk-license"
+          printf "\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910\n" > "$SDK_DIR/licenses/android-sdk-preview-license"
+
+          # Locate sdkmanager or install Android commandlinetools if not present
+          SDKMANAGER=$(find "$SDK_DIR" -name sdkmanager -type f 2>/dev/null | head -n 1 || true)
+          if [ -z "$SDKMANAGER" ]; then
+            echo "Installing Android command-line tools..."
+            mkdir -p "$SDK_DIR/cmdline-tools"
+            curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o /tmp/cmdtools.zip
+            unzip -q /tmp/cmdtools.zip -d "$SDK_DIR/cmdline-tools"
+            mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
+            SDKMANAGER="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
+          fi
+
+          yes | "$SDKMANAGER" --sdk_root="$SDK_DIR" --licenses >/dev/null 2>&1 || true
+          yes | "$SDKMANAGER" --sdk_root="$SDK_DIR" "platform-tools" "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0"
+
+          echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> "$GITHUB_ENV"
+
+      - name: Set up Gradle 9.3.1
+        run: |
+          set -e
+          curl -fsSL https://services.gradle.org/distributions/gradle-9.3.1-bin.zip -o /tmp/gradle-9.3.1-bin.zip
+          sudo mkdir -p /opt/gradle-dist
+          sudo unzip -q -o /tmp/gradle-9.3.1-bin.zip -d /opt/gradle-dist
+          echo "/opt/gradle-dist/gradle-9.3.1/bin" >> "$GITHUB_PATH"
+          /opt/gradle-dist/gradle-9.3.1/bin/gradle --version
 
       - name: Prepare Environment & Signing Keystores
         env:
@@ -53,6 +77,7 @@ jobs:
           SECRET_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          set -e
           # Ensure .env exists for Secrets Gradle Plugin (.env is gitignored)
           if [ ! -f ".env" ]; then
             if [ -f ".env.example" ]; then
@@ -77,7 +102,7 @@ jobs:
             fi
           fi
 
-          # Prepare Release Keystore (use repository secret if provided, else generate valid release keystore)
+          # Prepare Release Keystore
           rm -f my-upload-key.jks
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 --decode > my-upload-key.jks
@@ -98,10 +123,12 @@ jobs:
 
       - name: Build ABI Split & Universal Release APKs
         run: |
+          set -e
           gradle :app:assembleRelease -PenableAbiSplits=true --no-configuration-cache --stacktrace
 
       - name: Collect & Rename APKs (arm64, arm32, x86_64, universal)
         run: |
+          set -e
           mkdir -p release-apks
           OUT_DIR="app/build/outputs/apk/release"
           ls -la "$OUT_DIR"
@@ -142,35 +169,35 @@ jobs:
           name: TrueScreenTime-APKs
           path: release-apks/*
 
-      - name: Determine Release Tag
-        id: tag
+      - name: Publish GitHub Release with Multi-Arch APKs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ -n "${{ github.event.inputs.release_tag }}" ]]; then
-            echo "tag_name=${{ github.event.inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+          set -e
+          if [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            TAG_NAME="${{ github.event.inputs.release_tag }}"
           elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
           else
-            echo "tag_name=v1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+            TAG_NAME="v1.0.${{ github.run_number }}"
           fi
 
-      - name: Create GitHub Release with Multi-Arch APKs
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.tag_name }}
-          target_commitish: ${{ github.sha }}
-          name: "True Screen Time ${{ steps.tag.outputs.tag_name }}"
-          generate_release_notes: true
-          body: |
-            ## True Screen Time — Android Release APKs
-            Chronological morning-to-night app session timeline with exact start & end timestamps, idle lock gap tracking, pickup counter, and 24-hour activity ribbon.
+          cat << 'EOF' > release-notes.md
+          ## True Screen Time — Android Release APKs
+          Chronological morning-to-night app session timeline with exact start & end timestamps, idle lock gap tracking, pickup counter, and 24-hour activity ribbon.
 
-            ### 📦 Which APK should I download?
-            - **`TrueScreenTime-arm64-v8a.apk`** *(Recommended)* — For almost all modern Android phones & tablets (64-bit ARM).
-            - **`TrueScreenTime-universal.apk`** — Works on every Android device and architecture.
-            - **`TrueScreenTime-armeabi-v7a.apk`** — For older 32-bit ARM Android devices.
-            - **`TrueScreenTime-x86_64.apk`** — For Android emulators, PCs, and Chromebooks.
-          files: |
-            release-apks/*.apk
-            release-apks/SHA256SUMS.txt
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ### 📦 Which APK should I download?
+          - **`TrueScreenTime-arm64-v8a.apk`** *(Recommended)* — For almost all modern Android phones & tablets (64-bit ARM).
+          - **`TrueScreenTime-universal.apk`** — Works on every Android device and architecture.
+          - **`TrueScreenTime-armeabi-v7a.apk`** — For older 32-bit ARM Android devices.
+          - **`TrueScreenTime-x86_64.apk`** — For Android emulators, PCs, and Chromebooks.
+          EOF
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" release-apks/*.apk release-apks/SHA256SUMS.txt --clobber
+          else
+            gh release create "$TAG_NAME" release-apks/*.apk release-apks/SHA256SUMS.txt \
+              --title "True Screen Time $TAG_NAME" \
+              --notes-file release-notes.md \
+              --target "${GITHUB_SHA}"
+          fi
