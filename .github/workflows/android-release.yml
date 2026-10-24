@@ -21,6 +21,8 @@ jobs:
   build-and-release:
     name: Build Signed APKs (arm64-v8a, armeabi-v7a, x86_64, universal)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Repository
@@ -32,33 +34,55 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Setup Gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK Licenses & Install API 36.1
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0" || true
+
+      - name: Setup Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.13"
+          gradle-version: "9.3.1"
 
-      - name: Prepare Keystores for Release & Debug Signing
+      - name: Prepare Environment & Signing Keystores
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           SECRET_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          # Ensure debug.keystore exists
-          if [ ! -f "debug.keystore" ]; then
-            keytool -genkeypair -v \
-              -keystore debug.keystore \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
+          # Ensure .env exists for Secrets Gradle Plugin (.env is gitignored)
+          if [ ! -f ".env" ]; then
+            if [ -f ".env.example" ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
           fi
 
-          # Use repository secret keystore if configured, otherwise generate an Ephemeral Release Keystore
+          # Ensure debug.keystore exists
+          if [ ! -f "debug.keystore" ]; then
+            if [ -f "debug.keystore.base64" ]; then
+              base64 --decode debug.keystore.base64 > debug.keystore
+            else
+              keytool -genkeypair -v \
+                -keystore debug.keystore \
+                -storepass android \
+                -alias androiddebugkey \
+                -keypass android \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname "CN=Android Debug,O=Android,C=US"
+            fi
+          fi
+
+          # Prepare Release Keystore (use repository secret if provided, else generate valid release keystore)
+          rm -f my-upload-key.jks
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 --decode > my-upload-key.jks
-            echo "STORE_PASSWORD=${SECRET_STORE_PASSWORD}" >> $GITHUB_ENV
-            echo "KEY_PASSWORD=${SECRET_KEY_PASSWORD}" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=${SECRET_STORE_PASSWORD}" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=${SECRET_KEY_PASSWORD}" >> "$GITHUB_ENV"
           else
             keytool -genkeypair -v \
               -keystore my-upload-key.jks \
@@ -67,14 +91,14 @@ jobs:
               -keypass truescreentime123 \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -dname "CN=TrueScreenTime,O=OpenSource,C=US"
-            echo "STORE_PASSWORD=truescreentime123" >> $GITHUB_ENV
-            echo "KEY_PASSWORD=truescreentime123" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=truescreentime123" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=truescreentime123" >> "$GITHUB_ENV"
           fi
-          echo "KEYSTORE_PATH=${GITHUB_WORKSPACE}/my-upload-key.jks" >> $GITHUB_ENV
+          echo "KEYSTORE_PATH=${GITHUB_WORKSPACE}/my-upload-key.jks" >> "$GITHUB_ENV"
 
       - name: Build ABI Split & Universal Release APKs
         run: |
-          gradle :app:assembleRelease -PenableAbiSplits=true --stacktrace
+          gradle :app:assembleRelease -PenableAbiSplits=true --no-configuration-cache --stacktrace
 
       - name: Collect & Rename APKs (arm64, arm32, x86_64, universal)
         run: |
@@ -83,6 +107,7 @@ jobs:
           ls -la "$OUT_DIR"
 
           for apk in "$OUT_DIR"/*.apk; do
+            [ -e "$apk" ] || continue
             filename=$(basename "$apk")
             case "$filename" in
               *arm64-v8a*)
@@ -107,6 +132,7 @@ jobs:
           done
 
           cd release-apks
+          ls -la
           sha256sum *.apk > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
@@ -119,18 +145,19 @@ jobs:
       - name: Determine Release Tag
         id: tag
         run: |
-          if [[ "${{ github.event.inputs.release_tag }}" != "" ]]; then
-            echo "tag_name=${{ github.event.inputs.release_tag }}" >> $GITHUB_OUTPUT
+          if [[ -n "${{ github.event.inputs.release_tag }}" ]]; then
+            echo "tag_name=${{ github.event.inputs.release_tag }}" >> "$GITHUB_OUTPUT"
           elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag_name=v1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+            echo "tag_name=v1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create GitHub Release with Multi-Arch APKs
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
           name: "True Screen Time ${{ steps.tag.outputs.tag_name }}"
           generate_release_notes: true
           body: |

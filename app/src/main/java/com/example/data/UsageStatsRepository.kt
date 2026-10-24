@@ -27,6 +27,7 @@ class UsageStatsRepository(private val context: Context) {
     private val packageManager: PackageManager = context.packageManager
     private val appLabelCache = mutableMapOf<String, String>()
 
+    @Suppress("DEPRECATION")
     fun hasUsageStatsPermission(): Boolean {
         return try {
             val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
@@ -37,7 +38,6 @@ class UsageStatsRepository(private val context: Context) {
                     context.packageName
                 )
             } else {
-                @Suppress("DEPRECATION")
                 appOps.checkOpNoThrow(
                     AppOpsManager.OPSTR_GET_USAGE_STATS,
                     Process.myUid(),

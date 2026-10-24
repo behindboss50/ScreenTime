@@ -70,7 +70,9 @@ android {
   }
   splits {
     abi {
-      isEnable = project.findProperty("enableAbiSplits") == "true"
+      isEnable =
+        project.findProperty("enableAbiSplits") == "true" ||
+          System.getenv("GITHUB_ACTIONS") == "true"
       reset()
       include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
       isUniversalApk = true

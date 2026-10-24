@@ -29,7 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Layers
@@ -152,7 +152,7 @@ fun ScreenTimeScreen(
                                 modifier = Modifier.testTag("sort_menu_button")
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Sort,
+                                    imageVector = Icons.AutoMirrored.Filled.Sort,
                                     contentDescription = "Sort",
                                     tint = TextPrimary
                                 )
