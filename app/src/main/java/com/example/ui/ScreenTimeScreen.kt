@@ -1,9 +1,6 @@
 package com.example.ui
 
-import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,21 +19,21 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -44,14 +41,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -63,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -83,6 +80,8 @@ import com.example.ui.theme.DarkBg
 import com.example.ui.theme.DarkBorder
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.DarkSurfaceElevated
+import com.example.ui.theme.JetBrainsMonoFontFamily
+import com.example.ui.theme.SpaceGroteskFontFamily
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -116,13 +115,23 @@ fun ScreenTimeScreen(
                                     .clip(CircleShape)
                                     .background(AccentEmerald)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "True Screen Time",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimary
-                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "True Screen Time",
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "MORNING-TO-NIGHT SESSION LOG",
+                                    fontFamily = JetBrainsMonoFontFamily,
+                                    fontSize = 9.sp,
+                                    letterSpacing = 1.sp,
+                                    color = TextMuted
+                                )
+                            }
                         }
                     },
                     actions = {
@@ -198,7 +207,7 @@ fun ScreenTimeScreen(
                         OutlinedTextField(
                             value = uiState.searchQuery,
                             onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Search by app name...", color = TextMuted) },
+                            placeholder = { Text("Filter sessions by app name...", color = TextMuted) },
                             leadingIcon = {
                                 Icon(Icons.Default.Search, contentDescription = null, tint = TextMuted)
                             },
@@ -210,7 +219,7 @@ fun ScreenTimeScreen(
                                 }
                             },
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = DarkSurface,
                                 unfocusedContainerColor = DarkSurface,
@@ -225,73 +234,90 @@ fun ScreenTimeScreen(
                         )
                     }
                 }
-
-                // Tabs: Timeline, Apps, 24h Hourly
-                TabRow(
-                    selectedTabIndex = uiState.activeTab,
-                    containerColor = DarkBg,
-                    contentColor = TextPrimary,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[uiState.activeTab]),
-                            color = AccentCyan,
-                            height = 3.dp
+            }
+        },
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color(0xFF0C1220),
+                contentColor = TextPrimary,
+                tonalElevation = 8.dp,
+                windowInsets = WindowInsets.navigationBars,
+                modifier = Modifier.border(1.dp, DarkBorder)
+            ) {
+                NavigationBarItem(
+                    selected = uiState.activeTab == 0,
+                    onClick = { viewModel.setActiveTab(0) },
+                    icon = {
+                        Icon(
+                            imageVector = if (uiState.activeTab == 0) Icons.Filled.Timeline else Icons.Outlined.Timeline,
+                            contentDescription = "Timeline"
                         )
                     },
-                    divider = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(DarkBorder)
+                    label = {
+                        Text(
+                            text = "Timeline",
+                            fontWeight = if (uiState.activeTab == 0) FontWeight.Bold else FontWeight.Medium
                         )
-                    }
-                ) {
-                    Tab(
-                        selected = uiState.activeTab == 0,
-                        onClick = { viewModel.setActiveTab(0) },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Timeline, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Timeline", fontWeight = FontWeight.Bold)
-                            }
-                        },
-                        selectedContentColor = AccentCyan,
-                        unselectedContentColor = TextSecondary,
-                        modifier = Modifier.testTag("tab_timeline")
-                    )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF002B33),
+                        selectedTextColor = AccentCyan,
+                        indicatorColor = AccentCyan,
+                        unselectedIconColor = TextSecondary,
+                        unselectedTextColor = TextSecondary
+                    ),
+                    modifier = Modifier.testTag("tab_timeline")
+                )
 
-                    Tab(
-                        selected = uiState.activeTab == 1,
-                        onClick = { viewModel.setActiveTab(1) },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Layers, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Apps (${uiState.summary?.appSummaries?.size ?: 0})", fontWeight = FontWeight.Bold)
-                            }
-                        },
-                        selectedContentColor = AccentCyan,
-                        unselectedContentColor = TextSecondary,
-                        modifier = Modifier.testTag("tab_apps")
-                    )
+                NavigationBarItem(
+                    selected = uiState.activeTab == 1,
+                    onClick = { viewModel.setActiveTab(1) },
+                    icon = {
+                        Icon(
+                            imageVector = if (uiState.activeTab == 1) Icons.Filled.Layers else Icons.Outlined.Layers,
+                            contentDescription = "Apps"
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = "Apps (${uiState.summary?.appSummaries?.size ?: 0})",
+                            fontWeight = if (uiState.activeTab == 1) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF002B33),
+                        selectedTextColor = AccentCyan,
+                        indicatorColor = AccentCyan,
+                        unselectedIconColor = TextSecondary,
+                        unselectedTextColor = TextSecondary
+                    ),
+                    modifier = Modifier.testTag("tab_apps")
+                )
 
-                    Tab(
-                        selected = uiState.activeTab == 2,
-                        onClick = { viewModel.setActiveTab(2) },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.BarChart, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("24h Breakdown", fontWeight = FontWeight.Bold)
-                            }
-                        },
-                        selectedContentColor = AccentCyan,
-                        unselectedContentColor = TextSecondary,
-                        modifier = Modifier.testTag("tab_breakdown")
-                    )
-                }
+                NavigationBarItem(
+                    selected = uiState.activeTab == 2,
+                    onClick = { viewModel.setActiveTab(2) },
+                    icon = {
+                        Icon(
+                            imageVector = if (uiState.activeTab == 2) Icons.Filled.BarChart else Icons.Outlined.BarChart,
+                            contentDescription = "24h Breakdown"
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = "24h Pulse",
+                            fontWeight = if (uiState.activeTab == 2) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF002B33),
+                        selectedTextColor = AccentCyan,
+                        indicatorColor = AccentCyan,
+                        unselectedIconColor = TextSecondary,
+                        unselectedTextColor = TextSecondary
+                    ),
+                    modifier = Modifier.testTag("tab_breakdown")
+                )
             }
         },
         containerColor = DarkBg
@@ -300,7 +326,6 @@ fun ScreenTimeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             when (uiState.activeTab) {
                 0 -> TimelineTabContent(
@@ -315,7 +340,7 @@ fun ScreenTimeScreen(
                     uiState = uiState,
                     onAppClick = { appName ->
                         viewModel.setSearchQuery(appName)
-                        viewModel.setActiveTab(0) // Switch to timeline filtered to that app
+                        viewModel.setActiveTab(0)
                     }
                 )
                 2 -> HourlyTabContent(uiState = uiState)
@@ -356,7 +381,7 @@ private fun TimelineTabContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(bottom = 28.dp)
     ) {
         // Daily Summary Header & Quick Stats
         item {
@@ -392,32 +417,44 @@ private fun TimelineTabContent(
         // Active Filter Summary Info Bar (if filter active)
         if (uiState.selectedCategory != null || uiState.searchQuery.isNotEmpty() || uiState.selectedPeriodFilter != null) {
             item {
-                Row(
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = AccentCyan.copy(alpha = 0.12f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.4f)),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
                 ) {
-                    Text(
-                        text = "Showing ${sessions.size} sessions matching filter",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AccentCyan
-                    )
-
-                    Text(
-                        text = "Clear Filters",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
+                    Row(
                         modifier = Modifier
-                            .clickable {
-                                viewModel.setCategoryFilter(null)
-                                viewModel.setPeriodFilter(null)
-                                viewModel.setSearchQuery("")
-                            }
-                            .padding(4.dp)
-                    )
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Showing ${sessions.size} filtered sessions (${AppSession.formatDuration(sessions.sumOf { it.durationMs })})",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentCyan
+                        )
+
+                        Text(
+                            text = "Reset All",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(DarkSurfaceElevated)
+                                .clickable {
+                                    viewModel.setCategoryFilter(null)
+                                    viewModel.setPeriodFilter(null)
+                                    viewModel.setSearchQuery("")
+                                }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }
@@ -427,22 +464,37 @@ private fun TimelineTabContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Session Timeline",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
+                Column {
+                    Text(
+                        text = "Chronological Session Log",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Start & end timestamps for every foreground session",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
 
-                Text(
-                    text = uiState.sortOrder.displayName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextMuted
-                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = DarkSurfaceElevated,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
+                ) {
+                    Text(
+                        text = uiState.sortOrder.displayName,
+                        fontFamily = JetBrainsMonoFontFamily,
+                        fontSize = 10.sp,
+                        color = AccentCyan,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
 
@@ -473,16 +525,97 @@ private fun TimelineTabContent(
                 }
             }
         } else {
-            // Render Chronological Sessions with Start and End Times
-            itemsIndexed(
-                items = sessions,
-                key = { _, session -> session.id }
-            ) { index, session ->
-                SessionItemCard(
-                    session = session,
-                    isFirstInList = index == 0,
-                    isLastInList = index == sessions.lastIndex,
-                    onSessionClick = { viewModel.selectSession(it) }
+            // Render Chronological Sessions with Time-Of-Day Block Headers
+            sessions.forEachIndexed { index, session ->
+                val periodName = getTimePeriodLabel(session.startTimeMs)
+                val prevPeriodName = if (index > 0) getTimePeriodLabel(sessions[index - 1].startTimeMs) else null
+
+                if (uiState.sortOrder != TimelineSortOrder.LONGEST_FIRST && periodName != prevPeriodName) {
+                    val periodSessions = sessions.filter { getTimePeriodLabel(it.startTimeMs) == periodName }
+                    val periodTotalMs = periodSessions.sumOf { it.durationMs }
+                    val periodPickups = periodSessions.count { it.isNewPickup }
+
+                    item(key = "header_${periodName}_$index") {
+                        TimeOfDaySectionBanner(
+                            periodTitle = periodName,
+                            totalDuration = AppSession.formatDuration(periodTotalMs),
+                            sessionCount = periodSessions.size,
+                            pickupCount = periodPickups
+                        )
+                    }
+                }
+
+                item(key = session.id) {
+                    SessionItemCard(
+                        session = session,
+                        isFirstInList = index == 0,
+                        isLastInList = index == sessions.lastIndex,
+                        onSessionClick = { viewModel.selectSession(it) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun getTimePeriodLabel(timeMs: Long): String {
+    val hour = Calendar.getInstance().apply { timeInMillis = timeMs }.get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 6..11 -> "☀️ Morning (6:00 AM – 12:00 PM)"
+        in 12..16 -> "🌤️ Afternoon (12:00 PM – 5:00 PM)"
+        in 17..20 -> "🌆 Evening (5:00 PM – 9:00 PM)"
+        else -> "🌙 Night (9:00 PM – 6:00 AM)"
+    }
+}
+
+@Composable
+private fun TimeOfDaySectionBanner(
+    periodTitle: String,
+    totalDuration: String,
+    sessionCount: Int,
+    pickupCount: Int
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFF162238),
+                        Color(0xFF0E1626)
+                    )
+                )
+            )
+            .border(1.dp, Color(0xFF283A5E), RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = periodTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "$sessionCount sess • ${pickupCount}x wake • ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+                Text(
+                    text = totalDuration,
+                    fontFamily = JetBrainsMonoFontFamily,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentCyan
                 )
             }
         }
@@ -503,13 +636,13 @@ private fun AppsTabContent(
     ) {
         item {
             Text(
-                text = "Most Used Apps Today",
-                style = MaterialTheme.typography.titleMedium,
+                text = "App Usage & Session Frequency",
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
             Text(
-                text = "Tap any app to filter and see its full morning-to-night session timeline",
+                text = "Tap any app to inspect all of its individual start & end sessions on the timeline",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
@@ -539,13 +672,13 @@ private fun HourlyTabContent(
     ) {
         item {
             Text(
-                text = "24-Hour Screen Time Heatmap",
-                style = MaterialTheme.typography.titleMedium,
+                text = "24-Hour Screen Time Pulse",
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
             Text(
-                text = "Track phone usage distribution hour-by-hour from morning to night",
+                text = "Hour-by-hour active screen duration from midnight through night",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
@@ -559,9 +692,9 @@ private fun HourlyTabContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(DarkSurface)
-                    .border(1.dp, DarkBorder, RoundedCornerShape(10.dp))
+                    .border(1.dp, DarkBorder, RoundedCornerShape(12.dp))
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Row(
@@ -571,13 +704,14 @@ private fun HourlyTabContent(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.width(90.dp)
+                        modifier = Modifier.width(72.dp)
                     ) {
                         Text(
                             text = hourItem.label,
-                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = JetBrainsMonoFontFamily,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = if (hourItem.screenTimeMs > 0) TextPrimary else TextMuted
                         )
                     }
 
@@ -587,7 +721,7 @@ private fun HourlyTabContent(
                             .weight(1f)
                             .height(10.dp)
                             .clip(RoundedCornerShape(5.dp))
-                            .background(Color(0xFF1B2436))
+                            .background(Color(0xFF131B2B))
                     ) {
                         if (pct > 0f) {
                             Box(
@@ -596,10 +730,12 @@ private fun HourlyTabContent(
                                     .height(10.dp)
                                     .clip(RoundedCornerShape(5.dp))
                                     .background(
-                                        if (hourItem.screenTimeMs > 30 * 60 * 1000L)
-                                            AccentEmerald
-                                        else
-                                            AccentCyan
+                                        Brush.horizontalGradient(
+                                            colors = if (hourItem.screenTimeMs > 30 * 60 * 1000L)
+                                                listOf(AccentCyan, AccentEmerald)
+                                            else
+                                                listOf(Color(0xFF3B82F6), AccentCyan)
+                                        )
                                     )
                             )
                         }
@@ -612,10 +748,11 @@ private fun HourlyTabContent(
                             AppSession.formatDuration(hourItem.screenTimeMs)
                         else
                             "—",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = JetBrainsMonoFontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
                         color = if (hourItem.screenTimeMs > 0) TextPrimary else TextMuted,
-                        modifier = Modifier.width(60.dp)
+                        modifier = Modifier.width(56.dp)
                     )
                 }
             }
@@ -635,7 +772,6 @@ private fun CategoryFilterChipsRow(
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // "All" chip
         Surface(
             shape = RoundedCornerShape(18.dp),
             color = if (selectedCategory == null) AccentCyan else DarkSurface,

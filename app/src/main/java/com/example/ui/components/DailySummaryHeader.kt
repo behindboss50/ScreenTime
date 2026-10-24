@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,12 +20,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +36,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,8 +50,9 @@ import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.AccentEmerald
 import com.example.ui.theme.AccentViolet
 import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.DarkSurfaceElevated
+import com.example.ui.theme.JetBrainsMonoFontFamily
+import com.example.ui.theme.SpaceGroteskFontFamily
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -73,84 +77,128 @@ fun DailySummaryHeader(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Date Navigation Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // Sleek Date Switcher Pill Bar
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF111827),
+            border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(
-                onClick = onPreviousDay,
+            Row(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(DarkSurfaceElevated)
-                    .testTag("prev_day_button")
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Previous Day",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+                IconButton(
+                    onClick = onPreviousDay,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(DarkSurfaceElevated)
+                        .testTag("prev_day_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Previous Day",
+                        tint = TextPrimary
+                    )
+                }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onToday() }
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = summary?.dateLabel ?: "Today",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Text(
-                    text = if (summary?.isToday == true) "Tap to refresh" else "Tap for today",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AccentCyan
-                )
-            }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onToday() }
+                        .padding(horizontal = 16.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = summary?.dateLabel ?: "Today",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = if (summary?.isToday == true) "ACTIVE DAY • TAP TO REFRESH" else "TAP TO JUMP TO TODAY",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = JetBrainsMonoFontFamily,
+                        fontSize = 9.sp,
+                        letterSpacing = 0.8.sp,
+                        color = AccentCyan
+                    )
+                }
 
-            IconButton(
-                onClick = onNextDay,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(DarkSurfaceElevated)
-                    .testTag("next_day_button")
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Next Day",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
+                IconButton(
+                    onClick = onNextDay,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(DarkSurfaceElevated)
+                        .testTag("next_day_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Next Day",
+                        tint = TextPrimary
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Hero Metric Card
+        // Atmospheric Hero Telemetry Card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(24.dp))
                 .background(
-                    Brush.verticalGradient(
+                    Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFF131D31),
-                            Color(0xFF0F1726)
+                            Color(0xFF141E33),
+                            Color(0xFF0C1322),
+                            Color(0xFF0A0F1D)
                         )
                     )
                 )
-                .border(1.dp, DarkBorder, RoundedCornerShape(20.dp))
-                .padding(18.dp)
+                .drawBehind {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                AccentCyan.copy(alpha = 0.16f),
+                                Color.Transparent
+                            ),
+                            center = Offset(size.width * 0.85f, size.height * 0.2f),
+                            radius = size.width * 0.6f
+                        )
+                    )
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                AccentEmerald.copy(alpha = 0.12f),
+                                Color.Transparent
+                            ),
+                            center = Offset(size.width * 0.15f, size.height * 0.85f),
+                            radius = size.width * 0.5f
+                        )
+                    )
+                }
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            AccentCyan.copy(alpha = 0.4f),
+                            DarkBorder,
+                            AccentEmerald.copy(alpha = 0.25f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .padding(20.dp)
         ) {
             Column {
+                // Top Status Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -163,23 +211,24 @@ fun DailySummaryHeader(
                                 .clip(CircleShape)
                                 .background(AccentEmerald)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "TRUE SCREEN TIME",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 1.2.sp,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontFamily = JetBrainsMonoFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.4.sp,
                             color = AccentCyan
                         )
                     }
 
-                    // Demo / Live Toggle Pill
+                    // Demo / Live Mode Switch Pill
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isDemoMode) Color(0xFF2E2413) else Color(0xFF132B25),
+                        shape = RoundedCornerShape(50),
+                        color = if (isDemoMode) Color(0xFF281F12) else Color(0xFF0E2923),
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
-                            if (isDemoMode) Color(0xFFF59E0B) else AccentEmerald
+                            if (isDemoMode) Color(0xFFF59E0B).copy(alpha = 0.7f) else AccentEmerald.copy(alpha = 0.7f)
                         ),
                         modifier = Modifier
                             .clickable { onToggleDemo() }
@@ -187,77 +236,143 @@ fun DailySummaryHeader(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(if (isDemoMode) Color(0xFFF59E0B) else AccentEmerald)
+                            Icon(
+                                imageVector = Icons.Default.Bolt,
+                                contentDescription = null,
+                                tint = if (isDemoMode) Color(0xFFFBBF24) else AccentEmerald,
+                                modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = if (isDemoMode) "Sample Day" else "Live Device",
+                                text = if (isDemoMode) "Sample Day" else "Live Usage",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = if (isDemoMode) Color(0xFFFCD34D) else Color(0xFF6EE7B7)
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDemoMode) Color(0xFFFDE68A) else Color(0xFF6EE7B7)
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Big Total Time
+                // Big Hero Time Display
                 Row(
                     verticalAlignment = Alignment.Bottom,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = summary?.formattedTotalTime ?: "0m",
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = SpaceGroteskFontFamily,
+                        fontSize = 44.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-1).sp,
                         color = TextPrimary
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "across ${summary?.sessions?.size ?: 0} sessions",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.padding(bottom = 7.dp)) {
+                        Text(
+                            text = "${summary?.sessions?.size ?: 0} SESSIONS",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontFamily = JetBrainsMonoFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentEmerald
+                        )
+                        Text(
+                            text = "Tracked from morning",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                // Stacked Category Split Bar
+                val appSummaries = summary?.appSummaries ?: emptyList()
+                val totalMs = (summary?.totalScreenTimeMs ?: 1L).coerceAtLeast(1L)
+                val categoryTotals = appSummaries
+                    .groupBy { it.category }
+                    .mapValues { entry -> entry.value.sumOf { it.totalDurationMs } }
+                    .entries
+                    .sortedByDescending { it.value }
+
+                if (categoryTotals.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFF1E293B)),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        categoryTotals.forEach { (cat, catMs) ->
+                            val weight = (catMs.toFloat() / totalMs.toFloat()).coerceAtLeast(0.03f)
+                            Box(
+                                modifier = Modifier
+                                    .weight(weight)
+                                    .fillMaxHeight()
+                                    .background(cat.color)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        categoryTotals.take(4).forEach { (cat, catMs) ->
+                            val pct = ((catMs.toFloat() / totalMs.toFloat()) * 100).toInt()
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(cat.color)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${cat.displayName} $pct%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 10.sp,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 4-Card Quick Metrics Grid
+                // 4-Card Telemetry Grid
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    MetricMiniCard(
-                        icon = Icons.Default.LockOpen,
-                        label = "Pickups",
-                        value = "${summary?.pickupCount ?: 0}",
-                        accentColor = AccentEmerald,
-                        modifier = Modifier.weight(1f)
-                    )
-
                     val firstPickupTime = summary?.firstPickupTimeMs?.let {
                         SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(it))
                     } ?: "—"
 
                     MetricMiniCard(
                         icon = Icons.Default.WbSunny,
-                        label = "First Wake",
+                        label = "FIRST WAKE",
                         value = firstPickupTime,
                         accentColor = Color(0xFFF59E0B),
                         modifier = Modifier.weight(1f)
                     )
 
                     MetricMiniCard(
+                        icon = Icons.Default.LockOpen,
+                        label = "PICKUPS",
+                        value = "${summary?.pickupCount ?: 0}x",
+                        accentColor = AccentEmerald,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    MetricMiniCard(
                         icon = Icons.Default.HourglassTop,
-                        label = "Avg Session",
+                        label = "AVG SESSION",
                         value = summary?.formattedAverageSession ?: "0m",
                         accentColor = AccentCyan,
                         modifier = Modifier.weight(1f)
@@ -266,7 +381,7 @@ fun DailySummaryHeader(
                     val longestDur = summary?.longestSession?.formattedDuration ?: "0m"
                     MetricMiniCard(
                         icon = Icons.Default.Schedule,
-                        label = "Peak Session",
+                        label = "PEAK USE",
                         value = longestDur,
                         accentColor = AccentViolet,
                         modifier = Modifier.weight(1f)
@@ -285,10 +400,10 @@ fun DailySummaryHeader(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(Color(0xFF261D13))
-                    .border(1.dp, Color(0xFFB45309), RoundedCornerShape(12.dp))
-                    .padding(12.dp)
+                    .border(1.dp, Color(0xFFB45309), RoundedCornerShape(14.dp))
+                    .padding(14.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -297,20 +412,22 @@ fun DailySummaryHeader(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Usage Access Required",
+                            text = "Usage Access Permission Needed",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFDE68A)
                         )
                         Text(
-                            text = "Grant permission to read live app sessions on this device",
+                            text = "Enable Usage Access to track live app start & end times from your device",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFFFCD34D)
                         )
                     }
 
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = Color(0xFFF59E0B),
                         modifier = Modifier
                             .clickable { onRequestPermission() }
@@ -321,7 +438,7 @@ fun DailySummaryHeader(
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                         )
                     }
                 }
@@ -340,9 +457,9 @@ private fun MetricMiniCard(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(DarkSurfaceElevated)
-            .border(1.dp, Color(0xFF26334D), RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFF162033).copy(alpha = 0.85f))
+            .border(1.dp, Color(0xFF25344F), RoundedCornerShape(14.dp))
             .padding(vertical = 10.dp, horizontal = 8.dp)
     ) {
         Column(horizontalAlignment = Alignment.Start) {
@@ -351,21 +468,23 @@ private fun MetricMiniCard(
                     imageVector = icon,
                     contentDescription = label,
                     tint = accentColor,
-                    modifier = Modifier.size(13.dp)
+                    modifier = Modifier.size(12.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 10.sp,
+                    fontFamily = JetBrainsMonoFontFamily,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
                     color = TextMuted,
                     maxLines = 1
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.labelLarge,
+                fontFamily = JetBrainsMonoFontFamily,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
                 maxLines = 1
